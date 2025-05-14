@@ -14,10 +14,33 @@ const svg = d3.select("#heatmap")
 // Create tooltip
 const tooltip = d3.select("#tooltip");
 
-// Color scale
+// Find the maximum value in the data
+const maxValue = d3.max(transitionData, d => 
+    d3.max(Object.entries(d)
+        .filter(([key]) => key !== 'From')
+        .map(([_, value]) => +value)
+    )
+);
+
+// Custom color interpolator that emphasizes small differences
+const customInterpolator = (t) => {
+    // Apply power scaling to emphasize small differences
+    const power = 0.3; // Lower values emphasize small differences more
+    const scaledT = Math.pow(t, power);
+    
+    // Create a custom color scale that transitions through multiple colors
+    // Using HSL color space for better control over the transition
+    const hue = 240 * (1 - scaledT); // Blue (240) to Red (0)
+    const saturation = 100; // Full saturation
+    const lightness = 50 + 30 * (1 - scaledT); // Vary lightness for better contrast
+    
+    return `hsl(${hue}, ${saturation}%, ${lightness}%)`;
+};
+
+// Color scale with custom interpolator
 const colorScale = d3.scaleSequential()
-    .interpolator(d3.interpolateYlOrRd)
-    .domain([0, 1]);
+    .interpolator(customInterpolator)
+    .domain([0, maxValue]);
 
 // Get the states (excluding the 'From' column)
 const states = Object.keys(transitionData[0]).filter(key => key !== 'From');
@@ -62,7 +85,7 @@ transitionData.forEach(row => {
             .attr("fill", colorScale(value))
             .on("mouseover", function(event, d) {
                 tooltip
-                    .html(`From: ${origin}<br>To: ${destination}<br>Probability: ${(value * 100).toFixed(2)}%`)
+                    .html(`From: ${origin}<br>To: ${destination}<br>Probability: ${(value * 100).toFixed(4)}%`)
                     .style("left", (event.pageX + 10) + "px")
                     .style("top", (event.pageY - 10) + "px")
                     .classed("visible", true);
