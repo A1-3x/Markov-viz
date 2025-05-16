@@ -5,6 +5,7 @@ body {
     background-color: #f5f5f5;
     -webkit-tap-highlight-color: transparent;
     overflow-x: hidden;
+    touch-action: manipulation;
 }
 
 .container {
@@ -136,7 +137,9 @@ h1 {
     height: auto;
     min-height: 300px;
     position: relative;
-    overflow: hidden;
+    overflow: visible;
+    touch-action: pan-x pan-y pinch-zoom;
+    -webkit-overflow-scrolling: touch;
 }
 
 #heatmap svg {
@@ -144,6 +147,7 @@ h1 {
     margin: 0 auto;
     max-width: 100%;
     height: auto;
+    touch-action: pan-x pan-y pinch-zoom;
 }
 
 /* Mobile-specific styles */
@@ -156,10 +160,12 @@ h1 {
         padding: 10px;
         margin: 0;
         border-radius: 0;
+        overflow: visible;
     }
     
     .axis text {
         font-size: 10px;
+        pointer-events: all;
     }
     
     .selected-state {
@@ -167,13 +173,15 @@ h1 {
     }
     
     #heatmap {
-        overflow-x: auto;
+        overflow: visible;
         -webkit-overflow-scrolling: touch;
-        touch-action: pan-x pan-y;
+        touch-action: pan-x pan-y pinch-zoom;
+        min-height: 400px;
     }
     
     .cell {
         stroke-width: 0.5px;
+        pointer-events: all;
     }
     
     .tooltip {
@@ -190,10 +198,13 @@ h1 {
         border-radius: 8px;
         font-size: 14px;
         line-height: 1.4;
+        pointer-events: none;
+        z-index: 1000;
     }
     
     .axis-label {
         font-size: 12px !important;
+        pointer-events: none;
     }
     
     .button-container {
@@ -209,6 +220,18 @@ h1 {
     .filter-button {
         font-size: 14px;
         padding: 10px 15px;
+        touch-action: manipulation;
+    }
+    
+    /* Improve touch targets */
+    .axis text, .cell {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Add visual feedback for touch */
+    .axis text:active, .cell:active {
+        opacity: 0.7;
     }
 }
 
@@ -225,6 +248,10 @@ h1 {
     .tooltip {
         max-width: 250px;
     }
+    
+    #heatmap {
+        min-height: 500px;
+    }
 }
 
 /* Landscape orientation on mobile */
@@ -235,6 +262,7 @@ h1 {
     
     #heatmap {
         height: 80vh;
+        min-height: 300px;
     }
     
     .button-container {
@@ -242,5 +270,9 @@ h1 {
         top: auto;
         background: none;
         box-shadow: none;
+    }
+    
+    .axis text {
+        font-size: 9px;
     }
 } 

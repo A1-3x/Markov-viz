@@ -1,7 +1,5 @@
 // Set up dimensions and margins
 const margin = { top: 150, right: 100, bottom: 100, left: 100 };
-let width = Math.min(1000, window.innerWidth - margin.left - margin.right - 20);
-let height = Math.min(1000, window.innerWidth - margin.top - margin.bottom - 20);
 
 // Function to calculate responsive dimensions
 function calculateDimensions() {
@@ -9,10 +7,22 @@ function calculateDimensions() {
     const containerWidth = window.innerWidth - 20; // Account for body padding
     
     if (isMobile) {
-        // On mobile, make the visualization square and fit the screen width
+        // On mobile, adjust margins to be smaller
+        margin.top = 100;
+        margin.right = 60;
+        margin.bottom = 80;
+        margin.left = 60;
+        
+        // Make the visualization fit the screen width while maintaining aspect ratio
         width = containerWidth - margin.left - margin.right;
-        height = width; // Make it square
+        height = width; // Keep it square
     } else {
+        // Reset margins for desktop
+        margin.top = 150;
+        margin.right = 100;
+        margin.bottom = 100;
+        margin.left = 100;
+        
         // On desktop, maintain aspect ratio but limit maximum size
         width = Math.min(1000, containerWidth - margin.left - margin.right);
         height = Math.min(1000, width);
@@ -23,8 +33,8 @@ function calculateDimensions() {
 
 // Initial dimension calculation
 let dimensions = calculateDimensions();
-width = dimensions.width;
-height = dimensions.height;
+let width = dimensions.width;
+let height = dimensions.height;
 
 // Create SVG container
 const svg = d3.select("#heatmap")
@@ -36,10 +46,10 @@ const svg = d3.select("#heatmap")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
-// Add instructions
+// Add instructions with mobile-friendly text
 const instructions = svg.append("text")
     .attr("x", width / 2)
-    .attr("y", -margin.top + 70)
+    .attr("y", -margin.top + 50)
     .attr("text-anchor", "middle")
     .style("font-size", "14px")
     .style("fill", "#666");
@@ -47,12 +57,12 @@ const instructions = svg.append("text")
 instructions.append("tspan")
     .attr("x", width / 2)
     .attr("dy", "0")
-    .text("Click or tap on state labels to select them. Use the 'Filter to Selected States' button to focus on specific states.");
+    .text("Tap state labels to select them. Use buttons to filter.");
 
 instructions.append("tspan")
     .attr("x", width / 2)
     .attr("dy", "20")
-    .text("Hover or tap cells to see detailed transition probabilities. Click 'Show All States' to return to the full view.");
+    .text("Tap cells to see probabilities. Pinch to zoom if needed.");
 
 // Create tooltip
 const tooltip = d3.select("#tooltip");
@@ -349,7 +359,7 @@ function createCell(origin, destination, value) {
     return cell;
 }
 
-// Update the resize handler
+// Update the resize handler with better mobile support
 let resizeTimeout;
 window.addEventListener('resize', function() {
     // Clear the timeout if it exists
@@ -372,13 +382,19 @@ window.addEventListener('resize', function() {
         xScale.range([0, width]);
         yScale.range([0, height]);
         
-        // Update axes
+        // Update axes with mobile-friendly text size
+        const isMobile = window.innerWidth < 768;
+        const textSize = isMobile ? "10px" : "12px";
+        
         xAxis.call(d3.axisBottom(xScale))
             .selectAll("text")
             .attr("transform", "rotate(-45)")
-            .style("text-anchor", "end");
+            .style("text-anchor", "end")
+            .style("font-size", textSize);
         
-        yAxis.call(d3.axisLeft(yScale));
+        yAxis.call(d3.axisLeft(yScale))
+            .selectAll("text")
+            .style("font-size", textSize);
         
         // Update cells
         cells.forEach(cell => {
@@ -399,6 +415,7 @@ window.addEventListener('resize', function() {
             .attr("x", width / 2)
             .attr("y", height + margin.bottom - 20)
             .attr("text-anchor", "middle")
+            .style("font-size", isMobile ? "12px" : "14px")
             .text("Destination State");
         
         svg.append("text")
@@ -407,12 +424,13 @@ window.addEventListener('resize', function() {
             .attr("x", -height / 2)
             .attr("y", -margin.left + 20)
             .attr("text-anchor", "middle")
+            .style("font-size", isMobile ? "12px" : "14px")
             .text("Origin State");
             
         // Update instructions position
         instructions
             .attr("x", width / 2)
-            .attr("y", -margin.top + 70);
+            .attr("y", -margin.top + 50);
             
         instructions.selectAll("tspan")
             .attr("x", width / 2);
