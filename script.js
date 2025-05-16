@@ -20,9 +20,13 @@ function calculateDimensions() {
     const minSize = isMobile ? 300 : 500;
     const finalSize = Math.max(size, minSize);
     
+    // Ensure the size doesn't exceed container bounds
+    const maxSize = Math.min(containerWidth, containerHeight) - (isMobile ? 40 : 60);
+    const boundedSize = Math.min(finalSize, maxSize);
+    
     return {
-        width: finalSize,
-        height: finalSize,
+        width: boundedSize,
+        height: boundedSize,
         isMobile
     };
 }
@@ -35,6 +39,8 @@ const svg = d3.select("#heatmap")
     .append("svg")
     .attr("width", width + (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right))
     .attr("height", height + (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom))
+    .attr("viewBox", `0 0 ${width + (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right)} ${height + (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom)}`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
     .append("g")
     .attr("transform", `translate(${isMobile ? mobileMargin.left : margin.left},${isMobile ? mobileMargin.top : margin.top})`);
 
@@ -373,6 +379,7 @@ window.addEventListener('resize', () => {
         d3.select("#heatmap svg")
             .attr("width", width + (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right))
             .attr("height", height + (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom))
+            .attr("viewBox", `0 0 ${width + (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right)} ${height + (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom)}`)
             .select("g")
             .attr("transform", `translate(${isMobile ? mobileMargin.left : margin.left},${isMobile ? mobileMargin.top : margin.top})`);
 
