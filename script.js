@@ -1,13 +1,15 @@
 // Set up dimensions and margins
-const margin = { top: 150, right: 100, bottom: 100, left: 100 }; // Increased top margin for instructions
-const width = 1000 - margin.left - margin.right;
-const height = 1000 - margin.top - margin.bottom;
+const margin = { top: 150, right: 100, bottom: 100, left: 100 };
+let width = Math.min(1000, window.innerWidth - margin.left - margin.right - 20);
+let height = Math.min(1000, window.innerWidth - margin.top - margin.bottom - 20);
 
 // Create SVG container
 const svg = d3.select("#heatmap")
     .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
+    .attr("width", "100%")
+    .attr("height", "100%")
+    .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
+    .attr("preserveAspectRatio", "xMidYMid meet")
     .append("g")
     .attr("transform", `translate(${margin.left},${margin.top})`);
 
@@ -22,12 +24,12 @@ const instructions = svg.append("text")
 instructions.append("tspan")
     .attr("x", width / 2)
     .attr("dy", "0")
-    .text("Click on state labels to select them. Use the 'Filter to Selected States' button to focus on specific states.");
+    .text("Click or tap on state labels to select them. Use the 'Filter to Selected States' button to focus on specific states.");
 
 instructions.append("tspan")
     .attr("x", width / 2)
     .attr("dy", "20")
-    .text("Hover over cells to see detailed transition probabilities. Click 'Show All States' to return to the full view.");
+    .text("Hover or tap cells to see detailed transition probabilities. Click 'Show All States' to return to the full view.");
 
 // Create tooltip
 const tooltip = d3.select("#tooltip");
@@ -95,8 +97,9 @@ function createAxis(scale, orientation, transform = "") {
     
     axis.selectAll("text")
         .style("cursor", "pointer")
-        .on("click", function(event, d) {
-            toggleState(d);
+        .on("click touchstart", function(event) {
+            event.preventDefault();
+            toggleState(d3.select(this).datum());
         });
     
     return axis;
@@ -115,25 +118,7 @@ transitionData.forEach(row => {
     states.forEach(destination => {
         const value = +row[destination];
         
-        const cell = svg.append("rect")
-            .attr("class", "cell")
-            .attr("x", xScale(destination))
-            .attr("y", yScale(origin))
-            .attr("width", xScale.bandwidth())
-            .attr("height", yScale.bandwidth())
-            .attr("fill", colorScale(value))
-            .attr("data-origin", origin)
-            .attr("data-destination", destination)
-            .on("mouseover", function(event, d) {
-                tooltip
-                    .html(`From: ${origin}<br>To: ${destination}<br>Probability: ${(value * 100).toFixed(4)}%`)
-                    .style("left", (event.pageX + 10) + "px")
-                    .style("top", (event.pageY - 10) + "px")
-                    .classed("visible", true);
-            })
-            .on("mouseout", function() {
-                tooltip.classed("visible", false);
-            });
+        const cell = createCell(origin, destination, value);
         
         cells.push(cell);
     });
@@ -236,8 +221,9 @@ function filterToSelectedStates() {
         .attr("transform", "rotate(-45)")
         .style("text-anchor", "end")
         .style("cursor", "pointer")
-        .on("click", function(event, d) {
-            toggleState(d);
+        .on("click touchstart", function(event) {
+            event.preventDefault();
+            toggleState(d3.select(this).datum());
         });
     
     yAxis.transition()
@@ -245,8 +231,9 @@ function filterToSelectedStates() {
         .call(d3.axisLeft(yScale))
         .selectAll("text")
         .style("cursor", "pointer")
-        .on("click", function(event, d) {
-            toggleState(d);
+        .on("click touchstart", function(event) {
+            event.preventDefault();
+            toggleState(d3.select(this).datum());
         });
 }
 
@@ -308,4 +295,63 @@ svg.append("text")
     .attr("x", -height / 2)
     .attr("y", -margin.left + 20)
     .attr("text-anchor", "middle")
-    .text("Origin State"); 
+    .text("Origin State");
+
+// Update the cell event handlers to work better on mobile
+function createCell(origin, destination, value) {
+    const cell = svg.append("rect")
+        .attr("class", "cell")
+        .attr("x", xScale(destination))
+        .attr("y", yScale(origin))
+        .attr("width", xScale.bandwidth())
+        .attr("height", yScale.bandwidth())
+        .attr("fill", colorScale(value))
+        .attr("data-origin", origin)
+        .attr("data-destination", destination);
+
+    // Handle both mouse and touch events
+    cell.on("mouseover touchstart", function(event) {
+        event.preventDefault();
+        const touch = event.touches ? event.touches[0] : event;
+        tooltip
+            .html(`From: ${origin}<br>To: ${destination}<br>Probability: ${(value * 100).toFixed(4)}%`)
+            .style("left", (touch.pageX + 10) + "px")
+            .style("top", (touch.pageY - 10) + "px")
+            .classed("visible", true);
+    })
+    .on("mouseout touchend", function() {
+        tooltip.classed("visible", false);
+    });
+
+    return cell;
+}
+
+// Add window resize handler
+window.addEventListener('resize', function() {
+    // Update dimensions
+    width = Math.min(1000, window.innerWidth - margin.left - margin.right - 20);
+    height = Math.min(1000, window.innerWidth - margin.top - margin.bottom - 20);
+    
+    // Update SVG viewBox
+    d3.select("#heatmap svg")
+        .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+    
+    // Update scales
+    xScale.range([0, width]);
+    yScale.range([0, height]);
+    
+    // Update axes
+    xAxis.call(d3.axisBottom(xScale));
+    yAxis.call(d3.axisLeft(yScale));
+    
+    // Update cells
+    cells.forEach(cell => {
+        const origin = cell.attr("data-origin");
+        const destination = cell.attr("data-destination");
+        cell
+            .attr("x", xScale(destination))
+            .attr("y", yScale(origin))
+            .attr("width", xScale.bandwidth())
+            .attr("height", yScale.bandwidth());
+    });
+}); 
