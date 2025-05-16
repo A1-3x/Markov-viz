@@ -3,6 +3,29 @@ const margin = { top: 150, right: 100, bottom: 100, left: 100 };
 let width = Math.min(1000, window.innerWidth - margin.left - margin.right - 20);
 let height = Math.min(1000, window.innerWidth - margin.top - margin.bottom - 20);
 
+// Function to calculate responsive dimensions
+function calculateDimensions() {
+    const isMobile = window.innerWidth < 768;
+    const containerWidth = window.innerWidth - 20; // Account for body padding
+    
+    if (isMobile) {
+        // On mobile, make the visualization square and fit the screen width
+        width = containerWidth - margin.left - margin.right;
+        height = width; // Make it square
+    } else {
+        // On desktop, maintain aspect ratio but limit maximum size
+        width = Math.min(1000, containerWidth - margin.left - margin.right);
+        height = Math.min(1000, width);
+    }
+    
+    return { width, height };
+}
+
+// Initial dimension calculation
+let dimensions = calculateDimensions();
+width = dimensions.width;
+height = dimensions.height;
+
 // Create SVG container
 const svg = d3.select("#heatmap")
     .append("svg")
@@ -326,32 +349,72 @@ function createCell(origin, destination, value) {
     return cell;
 }
 
-// Add window resize handler
+// Update the resize handler
+let resizeTimeout;
 window.addEventListener('resize', function() {
-    // Update dimensions
-    width = Math.min(1000, window.innerWidth - margin.left - margin.right - 20);
-    height = Math.min(1000, window.innerWidth - margin.top - margin.bottom - 20);
+    // Clear the timeout if it exists
+    if (resizeTimeout) {
+        clearTimeout(resizeTimeout);
+    }
     
-    // Update SVG viewBox
-    d3.select("#heatmap svg")
-        .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
-    
-    // Update scales
-    xScale.range([0, width]);
-    yScale.range([0, height]);
-    
-    // Update axes
-    xAxis.call(d3.axisBottom(xScale));
-    yAxis.call(d3.axisLeft(yScale));
-    
-    // Update cells
-    cells.forEach(cell => {
-        const origin = cell.attr("data-origin");
-        const destination = cell.attr("data-destination");
-        cell
-            .attr("x", xScale(destination))
-            .attr("y", yScale(origin))
-            .attr("width", xScale.bandwidth())
-            .attr("height", yScale.bandwidth());
-    });
+    // Set a new timeout
+    resizeTimeout = setTimeout(function() {
+        // Calculate new dimensions
+        dimensions = calculateDimensions();
+        width = dimensions.width;
+        height = dimensions.height;
+        
+        // Update SVG viewBox
+        d3.select("#heatmap svg")
+            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+        
+        // Update scales
+        xScale.range([0, width]);
+        yScale.range([0, height]);
+        
+        // Update axes
+        xAxis.call(d3.axisBottom(xScale))
+            .selectAll("text")
+            .attr("transform", "rotate(-45)")
+            .style("text-anchor", "end");
+        
+        yAxis.call(d3.axisLeft(yScale));
+        
+        // Update cells
+        cells.forEach(cell => {
+            const origin = cell.attr("data-origin");
+            const destination = cell.attr("data-destination");
+            cell
+                .attr("x", xScale(destination))
+                .attr("y", yScale(origin))
+                .attr("width", xScale.bandwidth())
+                .attr("height", yScale.bandwidth());
+        });
+        
+        // Update axis labels position
+        svg.selectAll("text.axis-label").remove();
+        
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("x", width / 2)
+            .attr("y", height + margin.bottom - 20)
+            .attr("text-anchor", "middle")
+            .text("Destination State");
+        
+        svg.append("text")
+            .attr("class", "axis-label")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", -margin.left + 20)
+            .attr("text-anchor", "middle")
+            .text("Origin State");
+            
+        // Update instructions position
+        instructions
+            .attr("x", width / 2)
+            .attr("y", -margin.top + 70);
+            
+        instructions.selectAll("tspan")
+            .attr("x", width / 2);
+    }, 250); // Debounce resize events
 }); 

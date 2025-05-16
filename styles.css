@@ -4,6 +4,7 @@ body {
     padding: 10px;
     background-color: #f5f5f5;
     -webkit-tap-highlight-color: transparent;
+    overflow-x: hidden;
 }
 
 .container {
@@ -15,6 +16,7 @@ body {
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     box-sizing: border-box;
+    overflow: hidden;
 }
 
 h1 {
@@ -129,6 +131,21 @@ h1 {
     fill: #2196F3;
 }
 
+#heatmap {
+    width: 100%;
+    height: auto;
+    min-height: 300px;
+    position: relative;
+    overflow: hidden;
+}
+
+#heatmap svg {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+}
+
 /* Mobile-specific styles */
 @media (max-width: 767px) {
     body {
@@ -137,6 +154,8 @@ h1 {
     
     .container {
         padding: 10px;
+        margin: 0;
+        border-radius: 0;
     }
     
     .axis text {
@@ -150,9 +169,78 @@ h1 {
     #heatmap {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        touch-action: pan-x pan-y;
     }
     
     .cell {
         stroke-width: 0.5px;
+    }
+    
+    .tooltip {
+        position: fixed;
+        left: 50% !important;
+        transform: translateX(-50%);
+        bottom: 20px;
+        top: auto !important;
+        width: 90%;
+        max-width: 300px;
+        text-align: center;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 15px;
+        border-radius: 8px;
+        font-size: 14px;
+        line-height: 1.4;
+    }
+    
+    .axis-label {
+        font-size: 12px !important;
+    }
+    
+    .button-container {
+        position: sticky;
+        top: 0;
+        background: white;
+        z-index: 100;
+        padding: 10px 0;
+        margin: -10px 0 10px 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    
+    .filter-button {
+        font-size: 14px;
+        padding: 10px 15px;
+    }
+}
+
+/* Tablet-specific styles */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .container {
+        padding: 20px;
+    }
+    
+    .axis text {
+        font-size: 11px;
+    }
+    
+    .tooltip {
+        max-width: 250px;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 767px) and (orientation: landscape) {
+    .container {
+        padding: 10px;
+    }
+    
+    #heatmap {
+        height: 80vh;
+    }
+    
+    .button-container {
+        position: relative;
+        top: auto;
+        background: none;
+        box-shadow: none;
     }
 } 
