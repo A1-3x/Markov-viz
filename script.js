@@ -1,51 +1,37 @@
 // Set up dimensions and margins
-const margin = { top: 150, right: 100, bottom: 100, left: 100 };
+const margin = { top: 80, right: 80, bottom: 100, left: 100 };
+const mobileMargin = { top: 60, right: 60, bottom: 80, left: 80 };
 
 // Function to calculate responsive dimensions
 function calculateDimensions() {
-    const isMobile = window.innerWidth < 768;
-    const containerWidth = window.innerWidth - 20; // Account for body padding
-    let width, height;
+    const isMobile = window.innerWidth <= 767;
+    const containerWidth = document.querySelector('.container').clientWidth;
+    const containerHeight = document.querySelector('.container').clientHeight;
     
-    if (isMobile) {
-        // On mobile, adjust margins to be smaller
-        margin.top = 100;
-        margin.right = 60;
-        margin.bottom = 80;
-        margin.left = 60;
-        
-        // Make the visualization fit the screen width while maintaining aspect ratio
-        width = containerWidth - margin.left - margin.right;
-        height = width; // Keep it square
-    } else {
-        // Reset margins for desktop
-        margin.top = 150;
-        margin.right = 100;
-        margin.bottom = 100;
-        margin.left = 100;
-        
-        // On desktop, maintain aspect ratio but limit maximum size
-        width = Math.min(1000, containerWidth - margin.left - margin.right);
-        height = Math.min(1000, width);
-    }
+    // Calculate available space
+    const availableWidth = containerWidth - (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right);
+    const availableHeight = containerHeight - (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom);
     
-    return { width, height };
+    // Use the smaller dimension to ensure square cells
+    const size = Math.min(availableWidth, availableHeight);
+    
+    return {
+        width: size,
+        height: size,
+        isMobile
+    };
 }
 
-// Initial dimension calculation
-const dimensions = calculateDimensions();
-const width = dimensions.width;
-const height = dimensions.height;
+// Initial dimensions
+let { width, height, isMobile } = calculateDimensions();
 
 // Create SVG container
 const svg = d3.select("#heatmap")
     .append("svg")
-    .attr("width", "100%")
-    .attr("height", "100%")
-    .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`)
-    .attr("preserveAspectRatio", "xMidYMid meet")
+    .attr("width", width + (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right))
+    .attr("height", height + (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom))
     .append("g")
-    .attr("transform", `translate(${margin.left},${margin.top})`);
+    .attr("transform", `translate(${isMobile ? mobileMargin.left : margin.left},${isMobile ? mobileMargin.top : margin.top})`);
 
 // Add instructions with mobile-friendly text
 const instructions = svg.append("text")
@@ -124,9 +110,13 @@ function createAxis(scale, orientation, transform = "") {
         axis.call(d3.axisBottom(scale))
             .selectAll("text")
             .attr("transform", "rotate(-45)")
-            .style("text-anchor", "end");
+            .style("text-anchor", "end")
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em");
     } else {
-        axis.call(d3.axisLeft(scale));
+        axis.call(d3.axisLeft(scale))
+            .selectAll("text")
+            .attr("dx", "-.5em");
     }
     
     axis.selectAll("text")
@@ -319,16 +309,20 @@ d3.select("#clearButton").on("click", showAllStates);
 
 // Add axis labels
 svg.append("text")
+    .attr("class", "x-axis-label")
     .attr("x", width / 2)
-    .attr("y", height + margin.bottom - 20)
+    .attr("y", height + margin.bottom - 10)
     .attr("text-anchor", "middle")
+    .style("font-size", isMobile ? "12px" : "14px")
     .text("Destination State");
 
 svg.append("text")
+    .attr("class", "y-axis-label")
     .attr("transform", "rotate(-90)")
     .attr("x", -height / 2)
     .attr("y", -margin.left + 20)
     .attr("text-anchor", "middle")
+    .style("font-size", isMobile ? "12px" : "14px")
     .text("Origin State");
 
 // Update the cell event handlers to work better on mobile
@@ -362,78 +356,56 @@ function createCell(origin, destination, value) {
 
 // Update the resize handler with better mobile support
 let resizeTimeout;
-window.addEventListener('resize', function() {
-    // Clear the timeout if it exists
-    if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-    }
-    
-    // Set a new timeout
-    resizeTimeout = setTimeout(function() {
-        // Calculate new dimensions
+window.addEventListener('resize', () => {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
         const newDimensions = calculateDimensions();
-        const newWidth = newDimensions.width;
-        const newHeight = newDimensions.height;
-        
-        // Update SVG viewBox
+        width = newDimensions.width;
+        height = newDimensions.height;
+        isMobile = newDimensions.isMobile;
+
+        // Update SVG dimensions
         d3.select("#heatmap svg")
-            .attr("viewBox", `0 0 ${newWidth + margin.left + margin.right} ${newHeight + margin.top + margin.bottom}`);
-        
-        // Update scales
-        xScale.range([0, newWidth]);
-        yScale.range([0, newHeight]);
-        
-        // Update axes with mobile-friendly text size
-        const isMobile = window.innerWidth < 768;
-        const textSize = isMobile ? "10px" : "12px";
-        
-        xAxis.call(d3.axisBottom(xScale))
+            .attr("width", width + (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right))
+            .attr("height", height + (isMobile ? mobileMargin.top + mobileMargin.bottom : margin.top + margin.bottom))
+            .select("g")
+            .attr("transform", `translate(${isMobile ? mobileMargin.left : margin.left},${isMobile ? mobileMargin.top : margin.top})`);
+
+        // Update scales with equal bandwidth
+        xScale.range([0, width]);
+        yScale.range([0, height]);
+
+        // Update axes with better spacing
+        svg.select(".x-axis")
+            .call(xAxis)
             .selectAll("text")
             .attr("transform", "rotate(-45)")
             .style("text-anchor", "end")
-            .style("font-size", textSize);
-        
-        yAxis.call(d3.axisLeft(yScale))
+            .attr("dx", "-.8em")
+            .attr("dy", ".15em")
+            .style("font-size", isMobile ? "10px" : "12px");
+
+        svg.select(".y-axis")
+            .call(yAxis)
             .selectAll("text")
-            .style("font-size", textSize);
-        
-        // Update cells
-        cells.forEach(cell => {
-            const origin = cell.attr("data-origin");
-            const destination = cell.attr("data-destination");
-            cell
-                .attr("x", xScale(destination))
-                .attr("y", yScale(origin))
-                .attr("width", xScale.bandwidth())
-                .attr("height", yScale.bandwidth());
-        });
-        
-        // Update axis labels position
-        svg.selectAll("text.axis-label").remove();
-        
-        svg.append("text")
-            .attr("class", "axis-label")
-            .attr("x", newWidth / 2)
-            .attr("y", newHeight + margin.bottom - 20)
-            .attr("text-anchor", "middle")
-            .style("font-size", isMobile ? "12px" : "14px")
-            .text("Destination State");
-        
-        svg.append("text")
-            .attr("class", "axis-label")
-            .attr("transform", "rotate(-90)")
-            .attr("x", -newHeight / 2)
-            .attr("y", -margin.left + 20)
-            .attr("text-anchor", "middle")
-            .style("font-size", isMobile ? "12px" : "14px")
-            .text("Origin State");
-            
-        // Update instructions position
-        instructions
-            .attr("x", newWidth / 2)
-            .attr("y", -margin.top + 50);
-            
-        instructions.selectAll("tspan")
-            .attr("x", newWidth / 2);
-    }, 250); // Debounce resize events
+            .attr("dx", "-.5em")
+            .style("font-size", isMobile ? "10px" : "12px");
+
+        // Update cells to maintain square shape
+        svg.selectAll(".cell")
+            .attr("x", d => xScale(d[0]))
+            .attr("y", d => yScale(d[1]))
+            .attr("width", xScale.bandwidth())
+            .attr("height", yScale.bandwidth());
+
+        // Update axis labels with better positioning
+        svg.select(".x-axis-label")
+            .attr("x", width / 2)
+            .attr("y", height + (isMobile ? mobileMargin.bottom - 10 : margin.bottom - 10))
+            .style("font-size", isMobile ? "12px" : "14px");
+
+        svg.select(".y-axis-label")
+            .attr("transform", `rotate(-90) translate(${-height / 2}, ${isMobile ? -mobileMargin.left + 15 : -margin.left + 15})`)
+            .style("font-size", isMobile ? "12px" : "14px");
+    }, 250);
 }); 
