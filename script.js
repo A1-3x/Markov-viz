@@ -5,8 +5,9 @@ const mobileMargin = { top: 60, right: 60, bottom: 80, left: 80 };
 // Function to calculate responsive dimensions
 function calculateDimensions() {
     const isMobile = window.innerWidth <= 767;
-    const containerWidth = document.querySelector('.container').clientWidth;
-    const containerHeight = document.querySelector('.container').clientHeight;
+    const container = document.querySelector('.container');
+    const containerWidth = container.clientWidth;
+    const containerHeight = container.clientHeight;
     
     // Calculate available space
     const availableWidth = containerWidth - (isMobile ? mobileMargin.left + mobileMargin.right : margin.left + margin.right);
@@ -15,9 +16,13 @@ function calculateDimensions() {
     // Use the smaller dimension to ensure square cells
     const size = Math.min(availableWidth, availableHeight);
     
+    // Ensure minimum size for mobile
+    const minSize = isMobile ? 300 : 500;
+    const finalSize = Math.max(size, minSize);
+    
     return {
-        width: size,
-        height: size,
+        width: finalSize,
+        height: finalSize,
         isMobile
     };
 }
