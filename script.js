@@ -5,6 +5,7 @@ const margin = { top: 150, right: 100, bottom: 100, left: 100 };
 function calculateDimensions() {
     const isMobile = window.innerWidth < 768;
     const containerWidth = window.innerWidth - 20; // Account for body padding
+    let width, height;
     
     if (isMobile) {
         // On mobile, adjust margins to be smaller
@@ -32,9 +33,9 @@ function calculateDimensions() {
 }
 
 // Initial dimension calculation
-let dimensions = calculateDimensions();
-let width = dimensions.width;
-let height = dimensions.height;
+const dimensions = calculateDimensions();
+const width = dimensions.width;
+const height = dimensions.height;
 
 // Create SVG container
 const svg = d3.select("#heatmap")
@@ -370,17 +371,17 @@ window.addEventListener('resize', function() {
     // Set a new timeout
     resizeTimeout = setTimeout(function() {
         // Calculate new dimensions
-        dimensions = calculateDimensions();
-        width = dimensions.width;
-        height = dimensions.height;
+        const newDimensions = calculateDimensions();
+        const newWidth = newDimensions.width;
+        const newHeight = newDimensions.height;
         
         // Update SVG viewBox
         d3.select("#heatmap svg")
-            .attr("viewBox", `0 0 ${width + margin.left + margin.right} ${height + margin.top + margin.bottom}`);
+            .attr("viewBox", `0 0 ${newWidth + margin.left + margin.right} ${newHeight + margin.top + margin.bottom}`);
         
         // Update scales
-        xScale.range([0, width]);
-        yScale.range([0, height]);
+        xScale.range([0, newWidth]);
+        yScale.range([0, newHeight]);
         
         // Update axes with mobile-friendly text size
         const isMobile = window.innerWidth < 768;
@@ -412,8 +413,8 @@ window.addEventListener('resize', function() {
         
         svg.append("text")
             .attr("class", "axis-label")
-            .attr("x", width / 2)
-            .attr("y", height + margin.bottom - 20)
+            .attr("x", newWidth / 2)
+            .attr("y", newHeight + margin.bottom - 20)
             .attr("text-anchor", "middle")
             .style("font-size", isMobile ? "12px" : "14px")
             .text("Destination State");
@@ -421,7 +422,7 @@ window.addEventListener('resize', function() {
         svg.append("text")
             .attr("class", "axis-label")
             .attr("transform", "rotate(-90)")
-            .attr("x", -height / 2)
+            .attr("x", -newHeight / 2)
             .attr("y", -margin.left + 20)
             .attr("text-anchor", "middle")
             .style("font-size", isMobile ? "12px" : "14px")
@@ -429,10 +430,10 @@ window.addEventListener('resize', function() {
             
         // Update instructions position
         instructions
-            .attr("x", width / 2)
+            .attr("x", newWidth / 2)
             .attr("y", -margin.top + 50);
             
         instructions.selectAll("tspan")
-            .attr("x", width / 2);
+            .attr("x", newWidth / 2);
     }, 250); // Debounce resize events
 }); 
